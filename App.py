@@ -2,7 +2,7 @@ from openai import OpenAI
 import streamlit as st
 
 # Leer la API Key desde secrets
-openai.api_key = st.secrets["openai_api_key"]
+openai_api_key = st.secrets["openai_api_key"]
 assistant_id = st.secrets["assistant_id"]
 openai.organization = "org-XFlSAe5GkaZlemV7G7DZYiNy"
 openai.project = "proj_No911gg9A3eaaNUjxKv3rwcE"
