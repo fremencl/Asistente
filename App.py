@@ -54,13 +54,15 @@ if prompt := st.chat_input():
         messages = client.beta.threads.messages.list(thread_id=thread.id).data
         st.write("Mensajes obtenidos del hilo:", messages)
         
-        # Usar el enfoque del código de referencia para extraer y mostrar la respuesta
-        if messages and messages[0].content:
-            response_text = messages[0].content[0].text.value
+        # Verificar y extraer el contenido de la respuesta del asistente
+        assistant_message = next((msg for msg in messages if msg.role == "assistant"), None)
+        
+        if assistant_message and assistant_message.content:
+            response_text = assistant_message.content[0].text.value  # Asegurarse de que se está accediendo correctamente al texto
             st.session_state.messages.append({"role": "assistant", "content": response_text})
             st.chat_message("assistant").write(response_text)
             st.write("Respuesta del asistente obtenida con éxito:", response_text)
         else:
-            st.error("No se pudo obtener una respuesta del asistente.")
+            st.error("No se pudo obtener una respuesta válida del asistente.")
     except Exception as e:
         st.error(f"Error al obtener el mensaje del asistente: {e}")
