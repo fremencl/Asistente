@@ -35,7 +35,7 @@ if prompt := st.chat_input():
     # Realiza la solicitud de completions
     response = client.chat.completions.create(
       model="gpt-4o-mini",  # Especifica el modelo aquí
-      assistant_id=assistant_id  # si se confirma que es necesario
+      assistant_id=assistant_id,  # si se confirma que es necesario
       messages=st.session_state.messages
     )
 
