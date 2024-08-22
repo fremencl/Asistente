@@ -14,3 +14,19 @@ try:
     st.write("Asistente recuperado con éxito:", assistant)
 except Exception as e:
     st.error(f"Error al recuperar el asistente: {e}")
+
+# Captura la entrada del usuario
+if prompt := st.chat_input():
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    st.chat_message("user").write(prompt)
+
+    # Crear un nuevo hilo con el mensaje del usuario
+    try:
+        thread = client.beta.threads.create(
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+        st.write("Hilo creado con éxito:", thread)
+    except Exception as e:
+        st.error(f"Error al crear el hilo: {e}")
