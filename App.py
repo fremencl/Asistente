@@ -69,44 +69,42 @@ if prompt := st.chat_input():
 
     # Ejecutar el hilo con el asistente
     try:
-        with client.beta.threads.runs.stream(
+        run = client.beta.threads.runs.create(
             thread_id=thread.id,
-            assistant_id=assistant.id,
-            tool_choice={"type": "code_interpreter"},
-            stream=True
-        ) as stream:
-            st.write("Ejecutando el asistente...")
+            assistant_id=assistant.id
+        )
+        st.write("Ejecutando el asistente...")
 
-            assistant_output = []
+        # Procesar el resultado final aquí
+        assistant_output = []
+        for event in run:
+            if isinstance(event, ThreadRunStepCreated):
+                if event.data.step_details.type == "tool_calls":
+                    assistant_output.append({"type": "code_input", "content": ""})
+                    st.status("Escribiendo código ⏳ ...", expanded=True)
 
-            for event in stream:
-                if isinstance(event, ThreadRunStepCreated):
-                    if event.data.step_details.type == "tool_calls":
-                        assistant_output.append({"type": "code_input", "content": ""})
-                        code_input_block = st.status("Escribiendo código ⏳ ...", expanded=True).empty()
+            elif isinstance(event, ThreadRunStepDelta):
+                if event.data.delta.step_details.tool_calls[0].code_interpreter is not None:
+                    code_interpreter = event.data.delta.step_details.tool_calls[0].code_interpreter
+                    code_input_delta = code_interpreter.input
+                    if code_input_delta:
+                        assistant_output[-1]["content"] += code_input_delta
+                        st.code(assistant_output[-1]["content"])
 
-                elif isinstance(event, ThreadRunStepDelta):
-                    if event.data.delta.step_details.tool_calls[0].code_interpreter is not None:
-                        code_interpreter = event.data.delta.step_details.tool_calls[0].code_interpreter
-                        code_input_delta = code_interpreter.input
-                        if code_input_delta:
-                            assistant_output[-1]["content"] += code_input_delta
-                            code_input_block.code(assistant_output[-1]["content"])
+            elif isinstance(event, ThreadRunStepCompleted):
+                # Procesar el resultado final aquí
+                pass
 
-                elif isinstance(event, ThreadRunStepCompleted):
-                    # Procesar el resultado final aquí, similar a cómo se maneja en el código de referencia
-                    pass
+            elif isinstance(event, ThreadMessageCreated):
+                assistant_output.append({"type": "text", "content": ""})
+                st.empty()
 
-                elif isinstance(event, ThreadMessageCreated):
-                    assistant_output.append({"type": "text", "content": ""})
-                    assistant_text_box = st.empty()
+            elif isinstance(event, ThreadMessageDelta):
+                if isinstance(event.data.delta.content[0], TextDeltaBlock):
+                    assistant_output[-1]["content"] += event.data.delta.content[0].text.value
+                    st.markdown(assistant_output[-1]["content"])
 
-                elif isinstance(event, ThreadMessageDelta):
-                    if isinstance(event.data.delta.content[0], TextDeltaBlock):
-                        assistant_text_box.markdown(event.data.delta.content[0].text.value)
-                        assistant_output[-1]["content"] += event.data.delta.content[0].text.value
-
-            st.session_state.messages.append({"role": "assistant", "content": assistant_output})
+        st.session_state.messages.append({"role": "assistant", "content": assistant_output})
 
     except Exception as e:
         st.error(f"Error al ejecutar el hilo con el asistente: {e}")
