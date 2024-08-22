@@ -30,3 +30,13 @@ if prompt := st.chat_input():
         st.write("Hilo creado con éxito:", thread)
     except Exception as e:
         st.error(f"Error al crear el hilo: {e}")
+
+    # Ejecutar el hilo con el asistente
+    try:
+        run = client.beta.threads.runs.create(
+            thread_id=thread.id,
+            assistant_id=assistant.id,
+        )
+        st.write("Hilo ejecutado con éxito:", run)
+    except Exception as e:
+        st.error(f"Error al ejecutar el hilo: {e}")
