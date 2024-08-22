@@ -48,3 +48,18 @@ if prompt := st.chat_input():
         st.write("Hilo ejecutado con éxito:", run)
     except Exception as e:
         st.error(f"Error al ejecutar el hilo: {e}")
+
+    # Obtener la respuesta del asistente
+    try:
+        messages = client.beta.threads.messages.list(thread_id=thread.id).data
+        assistant_message = next((msg for msg in messages if msg.role == "assistant"), None)
+        
+        if assistant_message:
+            msg = assistant_message.content.text
+            st.session_state.messages.append({"role": "assistant", "content": msg})
+            st.chat_message("assistant").write(msg)
+            st.write("Respuesta del asistente obtenida con éxito:", msg)
+        else:
+            st.error("No se pudo obtener una respuesta del asistente.")
+    except Exception as e:
+        st.error(f"Error al obtener el mensaje del asistente: {e}")
