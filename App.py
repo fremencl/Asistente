@@ -9,48 +9,8 @@ assistant_id = st.secrets["assistant_id"]
 client = openai.Client(api_key=openai_api_key)
 
 # Recuperar el asistente que quieres usar
-assistant = client.beta.assistants.retrieve(assistant_id)
-
-# Título de la aplicación
-st.title("💬 Asistente Equipo Mantenimiento")
-st.caption("🚀 Un asistente integrado en Streamlit")
-
-# Inicializa el estado de los mensajes
-if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Hola ¿En qué puedo ayudarte?"}]
-
-# Muestra los mensajes existentes en la conversación
-for msg in st.session_state.messages:
-    st.chat_message(msg["role"]).write(msg["content"])
-
-# Captura la entrada del usuario
-if prompt := st.chat_input():
-    # Agrega el mensaje del usuario al estado de la sesión
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    st.chat_message("user").write(prompt)
-
-    # Crear un nuevo hilo con el mensaje del usuario
-    thread = client.beta.threads.create(
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
-
-    # Ejecutar el hilo con el asistente
-    run = client.beta.threads.runs.create(
-        thread_id=thread.id,
-        assistant_id=assistant.id,
-    )
-
-    # Obtener la respuesta del asistente
-    # Ahora tomamos el último mensaje del asistente en el hilo, asegurando que no es la pregunta del usuario
-    messages = client.beta.threads.messages.list(thread_id=thread.id).data
-    # Buscar el último mensaje del asistente
-    assistant_message = next((msg for msg in messages if msg.role == "assistant"), None)
-    
-    if assistant_message:
-        msg = assistant_message.content.text
-        st.session_state.messages.append({"role": "assistant", "content": msg})
-        st.chat_message("assistant").write(msg)
-    else:
-        st.error("No se pudo obtener una respuesta del asistente.")
+try:
+    assistant = client.beta.assistants.retrieve(assistant_id)
+    st.write("Asistente recuperado con éxito:", assistant)
+except Exception as e:
+    st.error(f"Error al recuperar el asistente: {e}")
