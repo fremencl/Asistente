@@ -43,9 +43,14 @@ if prompt := st.chat_input():
     )
 
     # Obtener la respuesta del asistente
-    response = client.beta.threads.messages.list(thread_id=thread.id)
-    msg = response.data[0].content[0].text.value
-
-    # Agregar la respuesta al estado de la sesión
-    st.session_state.messages.append({"role": "assistant", "content": msg})
-    st.chat_message("assistant").write(msg)
+    # Ahora tomamos el último mensaje del asistente en el hilo, asegurando que no es la pregunta del usuario
+    messages = client.beta.threads.messages.list(thread_id=thread.id).data
+    # Buscar el último mensaje del asistente
+    assistant_message = next((msg for msg in messages if msg.role == "assistant"), None)
+    
+    if assistant_message:
+        msg = assistant_message.content.text
+        st.session_state.messages.append({"role": "assistant", "content": msg})
+        st.chat_message("assistant").write(msg)
+    else:
+        st.error("No se pudo obtener una respuesta del asistente.")
