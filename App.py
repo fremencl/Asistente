@@ -52,6 +52,13 @@ if prompt := st.chat_input():
     # Obtener la respuesta del asistente
     try:
         messages = client.beta.threads.messages.list(thread_id=thread.id).data
+        st.write("Mensajes obtenidos del hilo:", messages)  # Depuración: Ver la lista completa de mensajes
+        
+        # Imprimir detalles de cada mensaje para analizar su contenido
+        for msg in messages:
+            st.write(f"Mensaje ID: {msg.id}, Rol: {msg.role}, Contenido: {msg.content}")
+
+        # Buscar el mensaje del asistente
         assistant_message = next((msg for msg in messages if msg.role == "assistant"), None)
         
         if assistant_message:
