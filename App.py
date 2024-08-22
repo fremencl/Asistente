@@ -15,9 +15,11 @@ try:
 except Exception as e:
     st.error(f"Error al recuperar el asistente: {e}")
 
-# Inicializa el estado de los mensajes
+# Inicializar el estado de sesión
 if "messages" not in st.session_state:
     st.session_state["messages"] = [{"role": "assistant", "content": "Hola ¿En qué puedo ayudarte?"}]
+if "thread_id" not in st.session_state:
+    st.session_state["thread_id"] = None
 
 # Muestra los mensajes existentes en la conversación
 for msg in st.session_state.messages:
@@ -28,41 +30,42 @@ if prompt := st.chat_input():
     st.session_state.messages.append({"role": "user", "content": prompt})
     st.chat_message("user").write(prompt)
 
-    # Crear un nuevo hilo con el mensaje del usuario
-    try:
-        thread = client.beta.threads.create(
-            messages=[
-                {"role": "user", "content": prompt}
-            ]
-        )
-        st.write("Hilo creado con éxito:", thread)
-    except Exception as e:
-        st.error(f"Error al crear el hilo: {e}")
+    # Crear un nuevo hilo si no existe
+    if not st.session_state.thread_id:
+        try:
+            thread = client.beta.threads.create()
+            st.session_state.thread_id = thread.id
+            st.write(f"Hilo creado con éxito: {st.session_state.thread_id}")
+        except Exception as e:
+            st.error(f"Error al crear el hilo: {e}")
 
-    # Ejecutar el hilo con el asistente
+    # Añadir el mensaje del usuario al hilo existente
     try:
-        run = client.beta.threads.runs.create(
-            thread_id=thread.id,
+        client.beta.threads.messages.create(
+            thread_id=st.session_state.thread_id,
+            role="user",
+            content=prompt,
+        )
+        st.write("Mensaje del usuario añadido al hilo con éxito.")
+    except Exception as e:
+        st.error(f"Error al añadir el mensaje al hilo: {e}")
+
+    # Ejecutar el hilo con el asistente utilizando streaming
+    try:
+        st.write("Ejecutando el asistente...")
+        with client.beta.threads.runs.stream(
+            thread_id=st.session_state.thread_id,
             assistant_id=assistant.id,
-        )
-        st.write("Hilo ejecutado con éxito:", run)
-    except Exception as e:
-        st.error(f"Error al ejecutar el hilo: {e}")
+            event_handler=None  # Aquí podrías personalizar un EventHandler si lo deseas
+        ) as stream:
+            response_content = ""
+            for event in stream:
+                if event.type == "text":
+                    response_content += event.text
+                    st.chat_message("assistant").write(event.text)  # Mostrar la respuesta en tiempo real
 
-    # Obtener la respuesta del asistente
-    try:
-        messages = client.beta.threads.messages.list(thread_id=thread.id).data
-        st.write("Mensajes obtenidos del hilo:", messages)
-        
-        # Verificar y extraer el contenido de la respuesta del asistente
-        assistant_message = next((msg for msg in messages if msg.role == "assistant"), None)
-        
-        if assistant_message and assistant_message.content:
-            response_text = assistant_message.content[0].text.value  # Asegurarse de que se está accediendo correctamente al texto
-            st.session_state.messages.append({"role": "assistant", "content": response_text})
-            st.chat_message("assistant").write(response_text)
-            st.write("Respuesta del asistente obtenida con éxito:", response_text)
-        else:
-            st.error("No se pudo obtener una respuesta válida del asistente.")
+            # Guardar la respuesta completa en la sesión
+            st.session_state.messages.append({"role": "assistant", "content": response_content})
+            st.write("Asistente finalizó la ejecución con éxito.")
     except Exception as e:
-        st.error(f"Error al obtener el mensaje del asistente: {e}")
+        st.error(f"Error al ejecutar el hilo con el asistente: {e}")
