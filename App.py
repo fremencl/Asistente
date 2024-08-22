@@ -85,7 +85,7 @@ if prompt := st.chat_input():
                         assistant_output.append({"type": "code_input", "content": ""})
                         code_input_block = st.status("Escribiendo código ⏳ ...", expanded=True).empty()
 
-                if isinstance(event, ThreadRunStepDelta):
+                elif isinstance(event, ThreadRunStepDelta):
                     if event.data.delta.step_details.tool_calls[0].code_interpreter is not None:
                         code_interpreter = event.data.delta.step_details.tool_calls[0].code_interpreter
                         code_input_delta = code_interpreter.input
@@ -95,6 +95,7 @@ if prompt := st.chat_input():
 
                 elif isinstance(event, ThreadRunStepCompleted):
                     # Procesar el resultado final aquí, similar a cómo se maneja en el código de referencia
+                    pass
 
                 elif isinstance(event, ThreadMessageCreated):
                     assistant_output.append({"type": "text", "content": ""})
