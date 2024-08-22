@@ -67,7 +67,7 @@ if prompt := st.chat_input():
     except Exception as e:
         st.error(f"Error al crear o actualizar el hilo: {e}")
 
-    # Ejecutar el hilo con el asistente
+    # Ejecutar el hilo con el asistente y obtener la respuesta
     try:
         run = client.beta.threads.runs.create(
             thread_id=thread.id,
@@ -77,25 +77,9 @@ if prompt := st.chat_input():
 
         # Procesar el resultado final aquí
         assistant_output = []
+
         for event in run:
-            if isinstance(event, ThreadRunStepCreated):
-                if event.data.step_details.type == "tool_calls":
-                    assistant_output.append({"type": "code_input", "content": ""})
-                    st.status("Escribiendo código ⏳ ...", expanded=True)
-
-            elif isinstance(event, ThreadRunStepDelta):
-                if event.data.delta.step_details.tool_calls[0].code_interpreter is not None:
-                    code_interpreter = event.data.delta.step_details.tool_calls[0].code_interpreter
-                    code_input_delta = code_interpreter.input
-                    if code_input_delta:
-                        assistant_output[-1]["content"] += code_input_delta
-                        st.code(assistant_output[-1]["content"])
-
-            elif isinstance(event, ThreadRunStepCompleted):
-                # Procesar el resultado final aquí
-                pass
-
-            elif isinstance(event, ThreadMessageCreated):
+            if isinstance(event, ThreadMessageCreated):
                 assistant_output.append({"type": "text", "content": ""})
                 st.empty()
 
