@@ -15,6 +15,14 @@ try:
 except Exception as e:
     st.error(f"Error al recuperar el asistente: {e}")
 
+# Inicializa el estado de los mensajes
+if "messages" not in st.session_state:
+    st.session_state["messages"] = [{"role": "assistant", "content": "Hola ¿En qué puedo ayudarte?"}]
+
+# Muestra los mensajes existentes en la conversación
+for msg in st.session_state.messages:
+    st.chat_message(msg["role"]).write(msg["content"])
+
 # Captura la entrada del usuario
 if prompt := st.chat_input():
     st.session_state.messages.append({"role": "user", "content": prompt})
