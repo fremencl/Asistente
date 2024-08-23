@@ -1,13 +1,5 @@
 import openai
 import streamlit as st
-from openai.types.beta.assistant_stream_event import (
-    ThreadRunStepCreated,
-    ThreadRunStepDelta,
-    ThreadRunStepCompleted,
-    ThreadMessageCreated,
-    ThreadMessageDelta
-    )
-from openai.types.beta.threads.text_delta_block import TextDeltaBlock
 
 # Leer la API Key y el assistant_id desde secrets
 openai_api_key = st.secrets["openai_api_key"]
@@ -23,27 +15,6 @@ try:
 except Exception as e:
     st.error(f"Error al recuperar el asistente: {e}")
 
-# Inicializar el estado de sesión
-if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": "Hola ¿En qué puedo ayudarte?"}]
-if "thread_id" not in st.session_state:
-    st.session_state["thread_id"] = None
-
-# Muestra los mensajes existentes en la conversación
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        if isinstance(msg["content"], str):
-            st.markdown(msg["content"])
-        elif isinstance(msg["content"], list):
-            for item in msg["content"]:
-                item_type = item.get("type")
-                if item_type == "text":
-                    st.markdown(item["content"])
-                elif item_type == "code_input" or item_type == "code_output":
-                    st.code(item["content"])
-                elif item_type == "image":
-                    st.image(item["content"])
-
 # Captura la entrada del usuario
 if prompt := st.chat_input():
     st.session_state.messages.append({"role": "user", "content": prompt})
@@ -51,26 +22,21 @@ if prompt := st.chat_input():
 
     # Crear un nuevo hilo con el mensaje del usuario
     try:
-        if st.session_state["thread_id"] is None:
-            thread = client.beta.threads.create()
-            st.session_state["thread_id"] = thread.id
-            st.write("Hilo creado con éxito:", thread)
-        else:
-            thread = client.beta.threads.retrieve(st.session_state["thread_id"])
-
-        client.beta.threads.messages.create(
-            thread_id=thread.id,
-            role="user",
-            content=prompt
+        thread = client.beta.threads.create(
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
         )
-        st.write("Mensaje del usuario añadido al hilo con éxito.")
+        st.write("Hilo creado con éxito:", thread)
     except Exception as e:
-        st.error(f"Error al crear o actualizar el hilo: {e}")
+        st.error(f"Error al crear el hilo: {e}")
 
-    # Ejecutar el hilo con el asistente y obtener la respuesta
+    # Ejecutar el hilo con el asistente
     try:
         run = client.beta.threads.runs.create(
             thread_id=thread.id,
-            assistant_id=assistant.id
+            assistant_id=assistant.id,
         )
-        st.write("Ejecutando el asistente...")
+        st.write("Hilo ejecutado con éxito:", run)
+    except Exception as e:
+        st.error(f"Error al ejecutar el hilo: {e}")
