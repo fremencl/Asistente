@@ -74,21 +74,3 @@ if prompt := st.chat_input():
             assistant_id=assistant.id
         )
         st.write("Ejecutando el asistente...")
-
-        # Procesar el resultado final aquí
-        assistant_output = []
-
-        for event in run:
-            if isinstance(event, ThreadMessageCreated):
-                assistant_output.append({"type": "text", "content": ""})
-                st.empty()
-
-            elif isinstance(event, ThreadMessageDelta):
-                if isinstance(event.data.delta.content[0], TextDeltaBlock):
-                    assistant_output[-1]["content"] += event.data.delta.content[0].text.value
-                    st.markdown(assistant_output[-1]["content"])
-
-        st.session_state.messages.append({"role": "assistant", "content": assistant_output})
-
-    except Exception as e:
-        st.error(f"Error al ejecutar el hilo con el asistente: {e}")
